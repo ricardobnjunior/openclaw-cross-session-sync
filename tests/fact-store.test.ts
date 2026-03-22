@@ -17,7 +17,7 @@ describe("fact-store", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("salva e recupera fatos", () => {
+  it("saves and retrieves facts", () => {
     store.upsert("Meeting moved to Thursday", "schedule", "whatsapp", "agent:main:whatsapp:direct:user1");
     const facts = store.getActiveFacts();
     expect(facts).toHaveLength(1);
@@ -25,19 +25,19 @@ describe("fact-store", () => {
     expect(facts[0].active).toBe(true);
   });
 
-  it("fato compartilhado entre sessoes — exclui sessao de origem", () => {
+  it("shares facts between sessions — excludes source session", () => {
     store.upsert("Meeting moved to Thursday", "schedule", "whatsapp", "agent:main:whatsapp:direct:user1");
 
-    // Sessao do Slack VE o fato
+    // Slack session CAN see the fact
     const factsForSlack = store.getActiveFactsExcludingSession("agent:main:slack:direct:user1");
     expect(factsForSlack).toHaveLength(1);
 
-    // Sessao do WhatsApp NAO ve (e a origem)
+    // WhatsApp session CANNOT see it (it's the source)
     const factsForWhatsapp = store.getActiveFactsExcludingSession("agent:main:whatsapp:direct:user1");
     expect(factsForWhatsapp).toHaveLength(0);
   });
 
-  it("conflito resolvido com last-write-wins", () => {
+  it("resolves conflicts with last-write-wins", () => {
     store.upsert("Favorite color is blue", "preference", "whatsapp", "agent:main:whatsapp:direct:user1");
     store.upsert("Favorite color is green", "preference", "slack", "agent:main:slack:direct:user1");
 
@@ -47,10 +47,10 @@ describe("fact-store", () => {
     expect(active[0].supersedes).toBeDefined();
   });
 
-  it("persiste entre reinicios", () => {
+  it("persists across restarts", () => {
     store.upsert("Important fact", "general", "telegram", "agent:main:telegram:direct:user1");
 
-    // Recriar store do mesmo diretorio (simula reinicio)
+    // Recreate store from the same directory (simulates restart)
     const store2 = new FactStore(tmpDir);
     const facts = store2.getActiveFacts();
     expect(facts).toHaveLength(1);

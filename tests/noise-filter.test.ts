@@ -2,16 +2,16 @@ import { describe, it, expect } from "vitest";
 import { isRelevantMessage } from "../src/noise-filter.js";
 
 describe("noise-filter", () => {
-  describe("filtra ruido", () => {
+  describe("discards noise", () => {
     const noiseMessages = ["lol", "ok", "haha", "👍", "kkkk", "rsrs", "!!", "?", "hi", "yes", "no", "😂🤣"];
     for (const msg of noiseMessages) {
-      it(`descarta: "${msg}"`, () => {
+      it(`rejects: "${msg}"`, () => {
         expect(isRelevantMessage(msg)).toBe(false);
       });
     }
   });
 
-  describe("detecta mensagens relevantes", () => {
+  describe("detects relevant messages", () => {
     const relevantMessages = [
       "My meeting with Acme Corp was moved to Thursday",
       "Reuniao com cliente cancelada para amanha",
@@ -22,7 +22,7 @@ describe("noise-filter", () => {
       "Meu email novo e joao@example.com",
     ];
     for (const msg of relevantMessages) {
-      it(`aceita: "${msg}"`, () => {
+      it(`accepts: "${msg}"`, () => {
         expect(isRelevantMessage(msg)).toBe(true);
       });
     }

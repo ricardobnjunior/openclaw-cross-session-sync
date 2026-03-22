@@ -1,12 +1,12 @@
 const NOISE_PATTERNS = [
   /^(lol|haha|hehe|kk+|rs+|ok|sim|nao|yes|no|sure|yep|nope|yeah|nah|hmm+|ah+|oh+|wow|nice|cool|great|thanks|thx|ty|np|gg|brb|omg|wtf|lmao|rofl)$/i,
-  /^[\p{Emoji}\s]+$/u,                          // So emojis
-  /^.{0,3}$/,                                    // 3 chars ou menos
-  /^\?+$|^!+$/,                                  // So pontuacao
+  /^[\p{Emoji}\s]+$/u,                          // Emoji-only
+  /^.{0,3}$/,                                    // 3 chars or less
+  /^\?+$|^!+$/,                                  // Punctuation-only
 ];
 
 const RELEVANT_SIGNALS = [
-  /\b\d{1,2}[\/\-\.]\d{1,2}/,                   // Datas
+  /\b\d{1,2}[\/\-\.]\d{1,2}/,                   // Dates
   /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|segunda|terca|quarta|quinta|sexta|sabado|domingo)\b/i,
   /\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i,
   /\b(reuniao|meeting|call|deadline|entrega|appointment|evento|event)\b/i,
@@ -20,22 +20,21 @@ const RELEVANT_SIGNALS = [
 export function isRelevantMessage(content: string): boolean {
   const trimmed = content.trim();
 
-  // Descarta ruido obvio
+  // Discard obvious noise
   for (const pattern of NOISE_PATTERNS) {
     if (pattern.test(trimmed)) return false;
   }
 
-  // Mensagens muito curtas sem sinais claros
+  // Short messages without clear signals
   const words = trimmed.split(/\s+/);
   if (words.length < 4) return false;
 
-  // Verifica sinais de relevancia
+  // Check for relevance signals
   for (const signal of RELEVANT_SIGNALS) {
     if (signal.test(trimmed)) return true;
   }
 
-  // Mensagens longas (7+ palavras) tem chance de ser relevantes
-  // Deixa o LLM decidir
+  // Long messages (7+ words) may be relevant — let the LLM decide
   if (words.length >= 7) return true;
 
   return false;

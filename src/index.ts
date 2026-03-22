@@ -10,16 +10,16 @@ export default definePluginEntry({
   description: "Synchronizes relevant knowledge between sessions in near real-time",
 
   register(api) {
-    // Resolver diretorio de estado do OpenClaw (~/.openclaw/)
+    // Resolve OpenClaw state directory (~/.openclaw/)
     const stateDir = join(
       process.env.HOME || process.env.USERPROFILE || "~",
       ".openclaw",
     );
     const factStore = new FactStore(stateDir);
 
-    // ─── Hook 1: Capturar mensagens inbound ───────────────────
-    // Toda vez que o usuario manda uma mensagem em QUALQUER canal,
-    // este hook dispara. Filtra ruido, extrai fato, salva no store.
+    // ─── Hook 1: Capture inbound messages ───────────────────
+    // Fires on every user message across ALL channels.
+    // Filters noise, extracts facts, saves to store.
     api.on(
       "message_received",
       async (event, ctx) => {
@@ -32,7 +32,7 @@ export default definePluginEntry({
 
         if (typeof content !== "string" || !content.trim()) return;
 
-        // Filtro de ruido (custo zero — sem LLM)
+        // Noise filter (zero cost — no LLM)
         if (!isRelevantMessage(content)) {
           api.logger.info(`[cross-session-sync] filtered as noise: "${content}"`);
           return;
@@ -40,7 +40,7 @@ export default definePluginEntry({
 
         api.logger.info(`[cross-session-sync] passed noise filter, extracting fact...`);
 
-        // Extrair fato via LLM barato (OpenRouter → Haiku)
+        // Extract fact via cheap LLM (OpenRouter)
         const result = await extractFact(content, async (prompt) => {
           const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
@@ -62,7 +62,7 @@ export default definePluginEntry({
 
         if (!result) return;
 
-        // Salvar fato no store (com resolucao de conflitos automatica)
+        // Save fact to store (with automatic conflict resolution)
         factStore.upsert(
           result.content,
           result.category,
@@ -74,17 +74,16 @@ export default definePluginEntry({
       },
     );
 
-    // ─── Hook 2: Injetar fatos no prompt de outras sessoes ────
-    // Quando qualquer sessao esta montando o prompt para enviar ao LLM,
-    // este hook injeta fatos de OUTRAS sessoes no system prompt.
-    // Assim o agente "sabe" o que foi dito em outros canais.
+    // ─── Hook 2: Inject facts into other sessions' prompts ────
+    // When any session builds a prompt for the LLM, this hook
+    // injects facts from OTHER sessions into the system prompt.
     api.on(
       "before_prompt_build",
       (_event, ctx) => {
         const sessionKey = ctx.sessionKey;
         if (!sessionKey) return {};
 
-        // Buscar fatos ativos que NAO vieram desta sessao
+        // Get active facts NOT from this session
         const facts = factStore.getActiveFactsExcludingSession(sessionKey);
         if (facts.length === 0) return {};
 
@@ -100,7 +99,7 @@ export default definePluginEntry({
           "",
         ].join("\n");
 
-        // prependContext adiciona esse texto no inicio do system prompt
+        // Prepend this text to the system prompt
         return { prependContext: injection };
       },
       { priority: 50 },

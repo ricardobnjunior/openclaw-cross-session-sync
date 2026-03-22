@@ -21,58 +21,58 @@ describe("integration: cross-session sync", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("CENARIO 1: fato do WhatsApp disponivel no Slack", async () => {
+  it("SCENARIO 1: WhatsApp fact available on Slack", async () => {
     const message = "My meeting with Acme Corp was moved to Thursday";
     const whatsappSession = "agent:main:whatsapp:direct:user1";
     const slackSession = "agent:main:slack:direct:user1";
 
-    // 1. Mensagem passa pelo noise filter
+    // 1. Message passes noise filter
     expect(isRelevantMessage(message)).toBe(true);
 
-    // 2. LLM extrai fato
+    // 2. LLM extracts fact
     const fact = await extractFact(
       message,
       mockLlm('{"content": "Meeting with Acme Corp moved to Thursday", "category": "schedule"}'),
     );
     expect(fact).not.toBeNull();
 
-    // 3. Fato salvo no store
+    // 3. Fact saved to store
     store.upsert(fact!.content, fact!.category, "whatsapp", whatsappSession);
 
-    // 4. Sessao do Slack ve o fato
+    // 4. Slack session sees the fact
     const factsForSlack = store.getActiveFactsExcludingSession(slackSession);
     expect(factsForSlack).toHaveLength(1);
     expect(factsForSlack[0].content).toContain("Acme Corp");
     expect(factsForSlack[0].content).toContain("Thursday");
   });
 
-  it("CENARIO 2: conflitos resolvidos gracefully", async () => {
+  it("SCENARIO 2: conflicts resolved gracefully", async () => {
     const whatsappSession = "agent:main:whatsapp:direct:user1";
     const slackSession = "agent:main:slack:direct:user1";
     const telegramSession = "agent:main:telegram:direct:user1";
 
-    // WhatsApp diz azul
+    // WhatsApp says blue
     store.upsert("Favorite color is blue", "preference", "whatsapp", whatsappSession);
 
-    // 10 segundos depois, Slack diz verde
+    // 10 seconds later, Slack says green
     store.upsert("Favorite color is green", "preference", "slack", slackSession);
 
-    // Telegram ve so o mais recente
+    // Telegram sees only the most recent
     const facts = store.getActiveFactsExcludingSession(telegramSession);
     expect(facts).toHaveLength(1);
     expect(facts[0].content).toBe("Favorite color is green");
     expect(facts[0].sourceChannel).toBe("slack");
   });
 
-  it("CENARIO 3: ruido nao e propagado", async () => {
+  it("SCENARIO 3: noise is not propagated", async () => {
     const noiseMessages = ["lol", "ok", "haha", "👍", "kkkk"];
     const discordSession = "agent:main:discord:direct:user1";
     const slackSession = "agent:main:slack:direct:user1";
 
     for (const msg of noiseMessages) {
-      // Noise filter barra todas
+      // Noise filter blocks all of them
       if (isRelevantMessage(msg)) {
-        // Se por algum motivo passar, LLM retorna null
+        // If it somehow passes, LLM returns null
         const fact = await extractFact(msg, mockLlm('{"content": null, "category": null}'));
         if (fact) {
           store.upsert(fact.content, fact.category, "discord", discordSession);
@@ -80,7 +80,7 @@ describe("integration: cross-session sync", () => {
       }
     }
 
-    // Nenhum fato propagado
+    // No facts propagated
     const facts = store.getActiveFactsExcludingSession(slackSession);
     expect(facts).toHaveLength(0);
   });
