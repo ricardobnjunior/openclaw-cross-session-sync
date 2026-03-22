@@ -8,32 +8,50 @@ OpenClaw maintains independent conversation contexts per channel. A user who tel
 
 ## How It Works
 
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  WhatsApp    │     │   Telegram   │     │   Discord    │
-│   Session    │     │   Session    │     │   Session    │
-└──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-       │                    │                    │
-       │  ┌─────────────────┴────────────────┐   │
-       └──┤    cross-session-sync plugin     ├───┘
-          │                                  │
-          │  1. Noise Filter (heuristic)     │
-          │     Discards "lol", "ok", etc.   │
-          │              │                   │
-          │              ▼                   │
-          │  2. Fact Extractor (cheap LLM)   │
-          │     Extracts structured facts    │
-          │              │                   │
-          │              ▼                   │
-          │  3. Fact Store (JSON on disk)    │
-          │     Saves with conflict          │
-          │     resolution (last-write-wins) │
-          │              │                   │
-          │              ▼                   │
-          │  4. Context Injector             │
-          │     Injects facts into OTHER     │
-          │     sessions' system prompts     │
-          └──────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph Channels["Messaging Channels"]
+        direction TB
+        WA["fa:fa-comments WhatsApp"]
+        TG["fa:fa-paper-plane Telegram"]
+        DC["fa:fa-headset Discord"]
+    end
+
+    subgraph Plugin["cross-session-sync"]
+        direction LR
+        NF["Noise Filter
+heuristic · zero cost"]
+        FE["Fact Extractor
+cheap LLM · ~$0.001"]
+        FS[("Fact Store
+JSON · last-write-wins")]
+        CI["Context Injector
+prepends to prompt"]
+    end
+
+    subgraph Sessions["Other Sessions' Prompts"]
+        direction TB
+        P1["Session B prompt"]
+        P2["Session C prompt"]
+    end
+
+    Channels -- "every inbound
+message" --> NF
+    NF -- "relevant" --> FE
+    NF -. "noise" .-> DROP(("✕"))
+    FE -- "fact" --> FS
+    FS -- "active facts" --> CI
+    CI -- "cross-session
+context" --> Sessions
+
+    style Channels fill:#e3f2fd,stroke:#1565C0,stroke-width:2px
+    style Plugin fill:#fff8e1,stroke:#EF6C00,stroke-width:2px
+    style Sessions fill:#e8f5e9,stroke:#2E7D32,stroke-width:2px
+    style NF fill:#c8e6c9,stroke:#388E3C
+    style FE fill:#fff9c4,stroke:#F9A825
+    style FS fill:#e1bee7,stroke:#7B1FA2
+    style CI fill:#b3e5fc,stroke:#0277BD
+    style DROP fill:#ffcdd2,stroke:#C62828
 ```
 
 The plugin uses two OpenClaw hooks:
