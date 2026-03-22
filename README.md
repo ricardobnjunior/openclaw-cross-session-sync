@@ -9,40 +9,32 @@ OpenClaw maintains independent conversation contexts per channel. A user who tel
 ## How It Works
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph Channels["Messaging Channels"]
-        direction TB
-        WA["fa:fa-comments WhatsApp"]
-        TG["fa:fa-paper-plane Telegram"]
-        DC["fa:fa-headset Discord"]
+        direction LR
+        WA["fa:fa-comments WhatsApp"] ~~~ TG["fa:fa-paper-plane Telegram"] ~~~ DC["fa:fa-headset Discord"]
     end
 
+    Channels -- "every inbound message" --> NF
+
     subgraph Plugin["cross-session-sync"]
-        direction LR
         NF["Noise Filter
 heuristic · zero cost"]
-        FE["Fact Extractor
+        NF -- "relevant" --> FE["Fact Extractor
 cheap LLM · ~$0.001"]
-        FS[("Fact Store
+        NF -. "noise" .-> DROP(("✕"))
+        FE -- "structured fact" --> FS[("Fact Store
 JSON · last-write-wins")]
-        CI["Context Injector
+        FS -- "active facts" --> CI["Context Injector
 prepends to prompt"]
     end
 
-    subgraph Sessions["Other Sessions' Prompts"]
-        direction TB
-        P1["Session B prompt"]
-        P2["Session C prompt"]
-    end
+    CI -- "cross-session context" --> Sessions
 
-    Channels -- "every inbound
-message" --> NF
-    NF -- "relevant" --> FE
-    NF -. "noise" .-> DROP(("✕"))
-    FE -- "fact" --> FS
-    FS -- "active facts" --> CI
-    CI -- "cross-session
-context" --> Sessions
+    subgraph Sessions["Other Sessions' Prompts"]
+        direction LR
+        P1["Session B prompt"] ~~~ P2["Session C prompt"]
+    end
 
     style Channels fill:#e3f2fd,stroke:#1565C0,stroke-width:2px
     style Plugin fill:#fff8e1,stroke:#EF6C00,stroke-width:2px
