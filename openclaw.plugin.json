@@ -1,0 +1,17 @@
+{
+  "id": "cross-session-sync",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true
+      },
+      "extractionModel": {
+        "type": "string",
+        "default": "openrouter/google/gemini-2.5-flash"
+      }
+    }
+  }
+}
