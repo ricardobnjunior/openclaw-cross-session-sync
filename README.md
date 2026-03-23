@@ -199,7 +199,6 @@ Any session now sees only: _"Favorite color is green"_
 │   └── integration.test.ts   # End-to-end integration tests
 ├── docs/
 │   ├── architecture.md       # Architecture document with diagrams
-│   └── discussion.md         # Discussion questions and analysis
 ├── package.json              # npm manifest
 └── openclaw.plugin.json      # OpenClaw plugin manifest
 ```
@@ -207,7 +206,6 @@ Any session now sees only: _"Favorite color is green"_
 ## Documentation
 
 - **[Architecture Document](docs/architecture.md)** — System design, data flow diagrams, conflict resolution strategy, cost analysis, and trade-offs
-- **[Discussion](docs/discussion.md)** — Alternatives to OpenClaw, advantages/disadvantages analysis, and fork maintenance strategy
 
 ## License
 
